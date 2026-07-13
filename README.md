@@ -33,4 +33,24 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
+## Docker Deployment
+
+The API key is passed as a **build argument** — it gets baked into the image layers at build time but is never stored in the Dockerfile source or git history.
+
+```bash
+# Build the image — pass your OpenRouter API key as a build arg
+docker build --build-arg OPENROUTER_API_KEY=sk-or-v1-... -t ai-lesson-planner .
+
+# Run the container (port 3001 exposed)
+docker run -p 3001:3001 ai-lesson-planner
+```
+
+Or with Docker Compose (reads the key from your shell environment):
+
+```bash
+OPENROUTER_API_KEY=sk-or-v1-... docker compose up --build
+```
+
+
+
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

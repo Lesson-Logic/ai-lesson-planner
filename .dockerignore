@@ -1,0 +1,25 @@
+# Dev dependencies
+node_modules
+npm-debug.log*
+
+# Next.js build cache (rebuilt inside Docker)
+.next
+out
+
+# Git
+.git
+.gitignore
+
+# Local env files — injected at runtime, never baked in
+.env*
+
+# Editor / OS noise
+.DS_Store
+*.pem
+.vscode
+.idea
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore
