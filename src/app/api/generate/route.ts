@@ -136,7 +136,7 @@ Only output the raw text "CLEAR" or the raw JSON. Do not wrap in markdown code b
 
 export async function POST(req: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL ?? "google/gemini-2.0-flash-lite-001";
+  const model = process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash";
 
   try {
     // ── Parse request body ────────────────────────────────────────────────

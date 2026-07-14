@@ -25,7 +25,7 @@ Output structure:
 
 export async function POST(req: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL ?? "google/gemini-2.0-flash-lite-001";
+  const model = process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash";
 
   try {
     let body: any;

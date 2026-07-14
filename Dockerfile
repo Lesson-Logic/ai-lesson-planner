@@ -13,8 +13,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build args can set public variables. Here we bake the secret API key directly into the image.
-ENV OPENROUTER_API_KEY=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
+# NEXT_TELEMETRY_DISABLED disables Next.js sending anonymous telemetry data.
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

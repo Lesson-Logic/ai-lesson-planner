@@ -763,7 +763,7 @@ export default function Home() {
                                               return (
                                                 <>
                                                   {parts[0]}
-                                                  <span style={{ display: "inline-block", background: "rgba(99, 102, 241, 0.15)", color: "var(--primary)", fontSize: "0.75rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>TODO</span>
+                                                  <span style={{ display: "inline-block", background: "rgba(234, 179, 8, 0.15)", color: "#ca8a04", fontSize: "0.75rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>Coming Soon</span>
                                                   {parts[1]}
                                                 </>
                                               );
@@ -798,7 +798,7 @@ export default function Home() {
                                         let customStyle = {};
 
                                         if (text.includes("[TODO]")) {
-                                          icon = <span style={{ color: "var(--primary)", fontSize: "1.1rem", lineHeight: "1.2", cursor: "default", userSelect: "none" }}>☑</span>;
+                                          icon = <span style={{ color: "var(--primary)", fontSize: "1.1rem", lineHeight: "1.2", cursor: "default", userSelect: "none" }}>✨</span>;
                                           customStyle = { listStyleType: "none", display: "flex", alignItems: "flex-start", gap: "8px", margin: "6px 0" };
                                         } else if (text.includes("Physical Props:") || text.startsWith("Physical Props:")) {
                                           icon = <span style={{ color: "#eab308", fontSize: "1.1rem", lineHeight: "1.2", userSelect: "none" }}>📦</span>;
@@ -826,7 +826,7 @@ export default function Home() {
                                                     gap: "4px"
                                                   }}
                                                 >
-                                                  ✨ Magic AI Worksheet
+                                                  🪄 Generate with AI
                                                 </button>
                                               </div>
                                             )}
