@@ -50,6 +50,13 @@ export default function Home() {
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatInput, setChatInput] = useState("");
 
+  // Worksheet Generator state
+  const [showWorksheetModal, setShowWorksheetModal] = useState(false);
+  const [worksheetSectionText, setWorksheetSectionText] = useState("");
+  const [generatedWorksheetContent, setGeneratedWorksheetContent] = useState("");
+  const [generatingWorksheet, setGeneratingWorksheet] = useState(false);
+  const [worksheetError, setWorksheetError] = useState<string | null>(null);
+
   // streaming state
   const [streaming, setStreaming] = useState(false);     // first token not yet arrived
   const [thinking, setThinking] = useState(false);       // waiting for first token
@@ -275,6 +282,50 @@ export default function Home() {
     setChatMessages(updatedMessages);
 
     await handleSubmit(undefined as any, false, updatedMessages);
+  };
+
+  const handleGenerateWorksheet = async (sectionText: string) => {
+    setShowWorksheetModal(true);
+    setGeneratingWorksheet(true);
+    setGeneratedWorksheetContent("");
+    setWorksheetError(null);
+    setWorksheetSectionText(sectionText);
+
+    try {
+      const response = await fetch("/api/generate-worksheet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sectionText, grade, subject }),
+      });
+
+      if (!response.ok) {
+        let errMsg = "Failed to generate worksheet";
+        try {
+          const errorData = await response.json();
+          if (errorData.error) errMsg = errorData.error;
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
+
+      if (!response.body) throw new Error("No response body returned from API");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let accumulated = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (value) {
+          accumulated += decoder.decode(value, { stream: true });
+          setGeneratedWorksheetContent(accumulated);
+        }
+      }
+    } catch (err: any) {
+      setWorksheetError(err.message || "An unexpected error occurred");
+    } finally {
+      setGeneratingWorksheet(false);
+    }
   };
 
   const hasOutput = result !== null || thinking || error;
@@ -703,53 +754,99 @@ export default function Home() {
                                         };
                                         const text = extractText(children);
 
-                                        if (text.includes("[TODO]")) {
-                                          const cleanChildren = React.Children.map(children, (child) => {
-                                            if (typeof child === "string" && child.includes("[TODO]")) {
-                                              const parts = child.split("[TODO]");
+                                        // Replaces [TODO], [Verbal Q&A], and [Worksheet Task] tags with styled badges
+                                        const cleanChildren = React.Children.map(children, (child) => {
+                                          if (typeof child === "string") {
+                                            let modified = child;
+                                            if (modified.includes("[TODO]")) {
+                                              const parts = modified.split("[TODO]");
                                               return (
                                                 <>
                                                   {parts[0]}
-                                                  <span
-                                                    style={{
-                                                      display: "inline-block",
-                                                      background: "rgba(99, 102, 241, 0.15)",
-                                                      color: "var(--primary)",
-                                                      fontSize: "0.75rem",
-                                                      fontWeight: 700,
-                                                      padding: "2px 6px",
-                                                      borderRadius: "4px",
-                                                      marginRight: "6px",
-                                                      verticalAlign: "middle"
-                                                    }}
-                                                  >
-                                                    TODO
-                                                  </span>
+                                                  <span style={{ display: "inline-block", background: "rgba(99, 102, 241, 0.15)", color: "var(--primary)", fontSize: "0.75rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>TODO</span>
                                                   {parts[1]}
                                                 </>
                                               );
                                             }
-                                            return child;
-                                          });
+                                            if (modified.includes("[Verbal Q&A]")) {
+                                              const parts = modified.split("[Verbal Q&A]");
+                                              return (
+                                                <>
+                                                  {parts[0]}
+                                                  <span style={{ display: "inline-block", background: "rgba(34, 197, 94, 0.12)", color: "#22c55e", fontSize: "0.725rem", fontWeight: 600, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>🗣️ Verbal Q&A</span>
+                                                  {parts[1]}
+                                                </>
+                                              );
+                                            }
+                                            if (modified.includes("[Worksheet Task]")) {
+                                              const parts = modified.split("[Worksheet Task]");
+                                              return (
+                                                <>
+                                                  {parts[0]}
+                                                  <span style={{ display: "inline-block", background: "rgba(59, 130, 246, 0.12)", color: "#3b82f6", fontSize: "0.725rem", fontWeight: 600, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>📄 Worksheet Task</span>
+                                                  {parts[1]}
+                                                </>
+                                              );
+                                            }
+                                          }
+                                          return child;
+                                        });
 
+                                        const isStep = /^(Hook|Instruction|Guided Practice|Independent Practice|Closure|Beginner|Intermediate|Advanced)\s*[-–]/i.test(text);
+
+                                        let icon = null;
+                                        let customStyle = {};
+
+                                        if (text.includes("[TODO]")) {
+                                          icon = <span style={{ color: "var(--primary)", fontSize: "1.1rem", lineHeight: "1.2", cursor: "default", userSelect: "none" }}>☑</span>;
+                                          customStyle = { listStyleType: "none", display: "flex", alignItems: "flex-start", gap: "8px", margin: "6px 0" };
+                                        } else if (text.includes("Physical Props:") || text.startsWith("Physical Props:")) {
+                                          icon = <span style={{ color: "#eab308", fontSize: "1.1rem", lineHeight: "1.2", userSelect: "none" }}>📦</span>;
+                                          customStyle = { listStyleType: "none", display: "flex", alignItems: "flex-start", gap: "8px", margin: "6px 0" };
+                                        }
+
+                                        const innerContent = (
+                                          <div style={{ flex: 1 }}>
+                                            <div>{cleanChildren}</div>
+                                            {isStep && !streaming && (
+                                              <div style={{ marginTop: "6px" }}>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleGenerateWorksheet(text)}
+                                                  style={{
+                                                    fontSize: "0.725rem",
+                                                    padding: "3px 8px",
+                                                    background: "rgba(168, 85, 247, 0.08)",
+                                                    border: "1px solid rgba(168, 85, 247, 0.2)",
+                                                    color: "#a855f7",
+                                                    borderRadius: "6px",
+                                                    cursor: "pointer",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: "4px"
+                                                  }}
+                                                >
+                                                  ✨ Magic AI Worksheet
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+
+                                        if (icon) {
                                           return (
-                                            <li style={{ listStyleType: "none", display: "flex", alignItems: "flex-start", gap: "8px", margin: "6px 0" }} {...props}>
-                                              <span style={{ color: "var(--primary)", fontSize: "1.1rem", lineHeight: "1.2", cursor: "default", userSelect: "none" }}>☑</span>
-                                              <div style={{ flex: 1 }}>{cleanChildren}</div>
+                                            <li style={customStyle} {...props}>
+                                              {icon}
+                                              {innerContent}
                                             </li>
                                           );
                                         }
 
-                                        if (text.includes("Physical Props:") || text.startsWith("Physical Props:")) {
-                                          return (
-                                            <li style={{ listStyleType: "none", display: "flex", alignItems: "flex-start", gap: "8px", margin: "6px 0" }} {...props}>
-                                              <span style={{ color: "#eab308", fontSize: "1.1rem", lineHeight: "1.2", userSelect: "none" }}>📦</span>
-                                              <div style={{ flex: 1 }}>{children}</div>
-                                            </li>
-                                          );
-                                        }
-
-                                        return <li {...props}>{children}</li>;
+                                        return (
+                                          <li style={{ margin: "4px 0" }} {...props}>
+                                            {innerContent}
+                                          </li>
+                                        );
                                       }
                                     }}
                                   >
@@ -954,6 +1051,130 @@ export default function Home() {
                       disabled={!clarificationResponse.trim()}
                     >
                       Confirm & Generate
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {showWorksheetModal && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: "rgba(15, 23, 42, 0.6)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 999,
+                  padding: "1rem"
+                }}
+              >
+                <div
+                  className="glass-panel"
+                  style={{
+                    maxWidth: "700px",
+                    width: "100%",
+                    maxHeight: "90vh",
+                    display: "flex",
+                    flexDirection: "column",
+                    background: "var(--background)",
+                    boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.04)",
+                    border: "1px solid var(--border)",
+                    animation: "fadeSlideIn 0.3s ease",
+                    padding: "1.5rem"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "1rem", marginBottom: "1rem" }}>
+                    <div>
+                      <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#a855f7", display: "flex", alignItems: "center", gap: "6px" }}>
+                        ✨ Magic AI Worksheet
+                      </h3>
+                      <p style={{ fontSize: "0.75rem", opacity: 0.6 }}>Generated specifically for this section</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowWorksheetModal(false);
+                        setGeneratedWorksheetContent("");
+                      }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        fontSize: "1.5rem",
+                        cursor: "pointer",
+                        color: "var(--foreground)",
+                        opacity: 0.5
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      flex: 1,
+                      overflowY: "auto",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      padding: "1.25rem",
+                      fontSize: "0.9rem",
+                      lineHeight: 1.7,
+                      marginBottom: "1rem"
+                    }}
+                  >
+                    {generatingWorksheet && !generatedWorksheetContent && (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: "10px", opacity: 0.5 }}>
+                        <ThinkingDots />
+                        <p style={{ fontSize: "0.85rem" }}>AI is crafting your worksheet...</p>
+                      </div>
+                    )}
+
+                    {worksheetError && (
+                      <div style={{ color: "#ef4444", padding: "1rem", background: "rgba(239, 68, 68, 0.08)", borderRadius: "8px", border: "1px solid rgba(239,68,68,0.2)" }}>
+                        ⚠ {worksheetError}
+                      </div>
+                    )}
+
+                    {generatedWorksheetContent && (
+                      <div className="markdown-body">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {generatedWorksheetContent}
+                        </ReactMarkdown>
+                        {generatingWorksheet && <Cursor />}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowWorksheetModal(false);
+                        setGeneratedWorksheetContent("");
+                      }}
+                      className="sidebar-toggle-btn"
+                    >
+                      Close
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedWorksheetContent);
+                        alert("Worksheet copied to clipboard!");
+                      }}
+                      className="btn-primary"
+                      disabled={!generatedWorksheetContent}
+                      style={{ background: "#a855f7" }}
+                    >
+                      📋 Copy Worksheet
                     </button>
                   </div>
                 </div>

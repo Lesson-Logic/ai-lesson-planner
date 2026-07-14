@@ -13,6 +13,7 @@ Rules:
 - Specify a clear, measurable learning outcome for every single section and task.
 - Provide a clear list of physical props/materials needed and dynamic digital resource TODOs.
 - Explicitly align the pedagogy to the student's NEP 2020 developmental stage.
+- Tag every activity/task name with either '[Verbal Q&A]' or '[Worksheet Task]' at the end, e.g. 'Hook - [Creative Name] [Verbal Q&A]:' or 'Beginner - [Creative Name] [Worksheet Task]:'.
 
 Output structure (use exactly these headings and markdown formatting):
 
