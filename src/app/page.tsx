@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -384,7 +384,69 @@ export default function Home() {
                     }}
                   >
                     <div className="markdown-body">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          li: ({ node, children, ...props }) => {
+                            const extractText = (n: any): string => {
+                              if (!n) return "";
+                              if (typeof n === "string") return n;
+                              if (Array.isArray(n)) return n.map(extractText).join("");
+                              if (n.props && n.props.children) return extractText(n.props.children);
+                              return "";
+                            };
+                            const text = extractText(children);
+
+                            if (text.includes("[TODO]")) {
+                              const cleanChildren = React.Children.map(children, (child) => {
+                                if (typeof child === "string" && child.includes("[TODO]")) {
+                                  const parts = child.split("[TODO]");
+                                  return (
+                                    <>
+                                      {parts[0]}
+                                      <span
+                                        style={{
+                                          display: "inline-block",
+                                          background: "rgba(99, 102, 241, 0.15)",
+                                          color: "var(--primary)",
+                                          fontSize: "0.75rem",
+                                          fontWeight: 700,
+                                          padding: "2px 6px",
+                                          borderRadius: "4px",
+                                          marginRight: "6px",
+                                          verticalAlign: "middle"
+                                        }}
+                                      >
+                                        TODO
+                                      </span>
+                                      {parts[1]}
+                                    </>
+                                  );
+                                }
+                                return child;
+                              });
+
+                              return (
+                                <li style={{ listStyleType: "none", display: "flex", alignItems: "flex-start", gap: "8px", margin: "6px 0" }} {...props}>
+                                  <span style={{ color: "var(--primary)", fontSize: "1.1rem", lineHeight: "1.2", cursor: "default", userSelect: "none" }}>☑</span>
+                                  <div style={{ flex: 1 }}>{cleanChildren}</div>
+                                </li>
+                              );
+                            }
+
+                            if (text.includes("Physical Props:") || text.startsWith("Physical Props:")) {
+                              return (
+                                <li style={{ listStyleType: "none", display: "flex", alignItems: "flex-start", gap: "8px", margin: "6px 0" }} {...props}>
+                                  <span style={{ color: "#eab308", fontSize: "1.1rem", lineHeight: "1.2", userSelect: "none" }}>📦</span>
+                                  <div style={{ flex: 1 }}>{children}</div>
+                                </li>
+                              );
+                            }
+
+                            return <li {...props}>{children}</li>;
+                          }
+                        }}
+                      >
                         {result}
                       </ReactMarkdown>
                       {streaming && <Cursor />}
