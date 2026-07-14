@@ -48,6 +48,91 @@ Output structure (use exactly these headings and markdown formatting):
 [Provide 2-3 sentences explaining exactly how the pedagogy and activities in this plan align with the matched NEP 2020 stage guidelines and principles.]
 `.trim();
 
+async function checkClarity(
+  grade: string,
+  subject: string,
+  objectives: string,
+  apiKey: string,
+  model: string
+): Promise<{ clear: boolean; questions?: string[]; suggestions?: string[] }> {
+  try {
+    const prompt = `
+You are an AI curricular assistant. Analyze if the following lesson details are clear and specific enough to generate a highly effective, practical lesson plan:
+Grade: "${grade}"
+Subject: "${subject}"
+Objectives: "${objectives}"
+
+If the inputs are clear and have a specific grade level, subject, and learning goal, respond with exactly:
+CLEAR
+
+If the inputs are vague, ambiguous, or lack specific details (e.g. if objectives are just "teach math" or "read", or grade is "kids", or if any field contains nonsense/gibberish), respond with exactly a JSON object in this format:
+{
+  "unclear": true,
+  "questions": [
+    "One or two specific questions to clarify the topic, grade, or objectives"
+  ],
+  "suggestions": [
+    "Two specific suggested choices/topics the teacher can pick from"
+  ]
+}
+
+Only output the raw text "CLEAR" or the raw JSON. Do not wrap in markdown code blocks like \`\`\`json.
+`;
+
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      return { clear: true };
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content?.trim();
+
+    if (!content) return { clear: true };
+    if (content === "CLEAR") return { clear: true };
+
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed.unclear) {
+        return {
+          clear: false,
+          questions: parsed.questions || [],
+          suggestions: parsed.suggestions || []
+        };
+      }
+    } catch {
+      const match = content.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          const parsed = JSON.parse(match[0]);
+          if (parsed.unclear) {
+            return {
+              clear: false,
+              questions: parsed.questions || [],
+              suggestions: parsed.suggestions || []
+            };
+          }
+        } catch (_) {}
+      }
+    }
+
+    return { clear: true };
+  } catch (err) {
+    console.error("Clarity check error:", err);
+    return { clear: true };
+  }
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   const model = process.env.OPENROUTER_MODEL ?? "google/gemini-2.0-flash-lite-001";
@@ -61,7 +146,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { grade, subject, objectives } = body;
+    const { grade, subject, objectives, clarified, clarification, messages } = body;
 
     if (!grade || !subject || !objectives) {
       return NextResponse.json(
@@ -77,6 +162,21 @@ export async function POST(req: Request) {
       );
     }
 
+    // ── Check Clarity if not clarified and this is the first turn ──────────
+    const isFirstTurn = !messages || !Array.isArray(messages) || messages.length === 0;
+    if (!clarified && isFirstTurn) {
+      const clarity = await checkClarity(grade, subject, objectives, apiKey, model);
+      if (!clarity.clear) {
+        return NextResponse.json({
+          clarificationRequired: true,
+          questions: clarity.questions,
+          suggestions: clarity.suggestions
+        });
+      }
+    }
+
+    const finalObjectives = clarification ? `${objectives} (Clarification: ${clarification})` : objectives;
+
     // ── Determine NEP Stage ───────────────────────────────────────────────
     const { stage, matched } = getNepGuidelines(grade);
     const nepInstructions = `
@@ -89,16 +189,27 @@ ${stage.pedagogicalPrinciples.map(p => `- ${p}`).join("\n")}
 `;
 
     const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n${nepInstructions}`;
-    const userMessage = `Grade: ${grade}\nSubject: ${subject}\nObjectives: ${objectives}`;
+    const userMessage = `Grade: ${grade}\nSubject: ${subject}\nObjectives: ${finalObjectives}`;
+
+    // Construct conversation history for OpenRouter
+    let finalMessages: any[] = [];
+    if (messages && Array.isArray(messages) && messages.length > 0) {
+      finalMessages = [
+        { role: "system", content: dynamicSystemPrompt },
+        ...messages
+      ];
+    } else {
+      finalMessages = [
+        { role: "system", content: dynamicSystemPrompt },
+        { role: "user",   content: userMessage },
+      ];
+    }
 
     // ── Call OpenRouter ───────────────────────────────────────────────────
     const requestBody = {
       model,
       stream: true,
-      messages: [
-        { role: "system", content: dynamicSystemPrompt },
-        { role: "user",   content: userMessage },
-      ],
+      messages: finalMessages,
     };
 
     let openRouterRes: Response;

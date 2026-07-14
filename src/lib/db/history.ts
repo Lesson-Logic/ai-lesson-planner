@@ -7,6 +7,7 @@ export interface HistoryItem {
   subject: string;
   objectives: string;
   result: string;
+  messages?: { role: "user" | "assistant"; content: string }[];
   createdAt: string;
 }
 
@@ -37,13 +38,31 @@ export function getHistory(): HistoryItem[] {
   }
 }
 
-export function saveHistoryItem(item: Omit<HistoryItem, "id" | "createdAt">): HistoryItem {
+export function saveHistoryItem(item: Omit<HistoryItem, "id" | "createdAt"> & { id?: string }): HistoryItem {
   ensureFileExists();
   const items = getHistory();
+
+  if (item.id) {
+    const existingIndex = items.findIndex(x => x.id === item.id);
+    if (existingIndex !== -1) {
+      const updatedItem: HistoryItem = {
+        ...items[existingIndex],
+        ...item,
+        id: item.id,
+        createdAt: new Date().toISOString()
+      };
+      items[existingIndex] = updatedItem;
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      fs.writeFileSync(HISTORY_FILE_PATH, JSON.stringify(items, null, 2), "utf8");
+      return updatedItem;
+    }
+  }
+
   const newItem: HistoryItem = {
     ...item,
-    id: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
-    createdAt: new Date().toISOString()
+    id: item.id || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+    createdAt: new Date().toISOString(),
+    messages: item.messages || []
   };
   items.unshift(newItem); // Add to beginning
   fs.writeFileSync(HISTORY_FILE_PATH, JSON.stringify(items, null, 2), "utf8");

@@ -13,7 +13,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { grade, subject, objectives, result } = body;
+    const { id, grade, subject, objectives, result, messages } = body;
 
     if (!grade || !subject || !objectives || !result) {
       return NextResponse.json(
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const saved = saveHistoryItem({ grade, subject, objectives, result });
+    const saved = saveHistoryItem({ id, grade, subject, objectives, result, messages });
     return NextResponse.json({ item: saved });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to save history" }, { status: 500 });
