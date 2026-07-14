@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
+import { getNepGuidelines } from "@/lib/db/nep2020";
 
 const SYSTEM_PROMPT = `
 You are an expert curriculum designer. Produce a concise, practical lesson plan and a differentiated activity worksheet.
 
 Rules:
-- Total response must be under 600 words.
+- Total response must be under 700 words.
 - Use Markdown with clear headings (##) and bullet points.
 - Be direct — no filler, no repetition.
 - Never restate the grade, subject, or objectives back to the user.
 - Generate a unique, engaging, and creative name for EVERY activity.
 - Specify a clear, measurable learning outcome for every single section and task.
 - Provide a clear list of physical props/materials needed and dynamic digital resource TODOs.
+- Explicitly align the pedagogy to the student's NEP 2020 developmental stage.
 
 Output structure (use exactly these headings and markdown formatting):
 
@@ -41,6 +43,9 @@ Output structure (use exactly these headings and markdown formatting):
   *(Learning Outcome: [Specific outcome])*
 - **Advanced - [Creative Name]:** [1–2 tasks requiring analysis or creation]
   *(Learning Outcome: [Specific outcome])*
+
+## NEP 2020 Alignment Summary
+[Provide 2-3 sentences explaining exactly how the pedagogy and activities in this plan align with the matched NEP 2020 stage guidelines and principles.]
 `.trim();
 
 export async function POST(req: Request) {
@@ -72,6 +77,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // ── Determine NEP Stage ───────────────────────────────────────────────
+    const { stage, matched } = getNepGuidelines(grade);
+    const nepInstructions = `
+Pedagogical Stage Alignment:
+You must align the lesson plan and worksheet with India's National Education Policy (NEP) 2020.
+The student is in the "${stage.stageName}" (Grades: ${stage.grades}, Ages: ${stage.ages}).
+Pedagogical Focus: ${stage.focus}
+Pedagogical Principles to apply:
+${stage.pedagogicalPrinciples.map(p => `- ${p}`).join("\n")}
+`;
+
+    const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n${nepInstructions}`;
     const userMessage = `Grade: ${grade}\nSubject: ${subject}\nObjectives: ${objectives}`;
 
     // ── Call OpenRouter ───────────────────────────────────────────────────
@@ -79,7 +96,7 @@ export async function POST(req: Request) {
       model,
       stream: true,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: dynamicSystemPrompt },
         { role: "user",   content: userMessage },
       ],
     };
