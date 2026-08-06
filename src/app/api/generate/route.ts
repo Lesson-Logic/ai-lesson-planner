@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getNepGuidelines } from "@/lib/db/nep2020";
+import { getMarbleTaxonomyRAGContext } from "@/lib/rag/os-taxonomy";
 
 const SYSTEM_PROMPT = `
 You are an expert curriculum designer. Produce a concise, practical lesson plan and a differentiated activity worksheet.
@@ -12,7 +13,7 @@ Rules:
 - Generate a unique, engaging, and creative name for EVERY activity.
 - Specify a clear, measurable learning outcome for every single section and task.
 - Provide a clear list of physical props/materials needed and dynamic digital resource TODOs.
-- Explicitly align the pedagogy to the student's NEP 2020 developmental stage.
+- Explicitly align the pedagogy to the student's stage guidelines.
 - Tag every activity/task name with either '[Verbal Q&A]' or '[Worksheet Task]' at the end, e.g. 'Hook - [Creative Name] [Verbal Q&A]:' or 'Beginner - [Creative Name] [Worksheet Task]:'.
 
 Output structure (use exactly these headings and markdown formatting):
@@ -45,8 +46,8 @@ Output structure (use exactly these headings and markdown formatting):
 - **Advanced - [Creative Name]:** [1–2 tasks requiring analysis or creation]
   *(Learning Outcome: [Specific outcome])*
 
-## NEP 2020 Alignment Summary
-[Provide 2-3 sentences explaining exactly how the pedagogy and activities in this plan align with the matched NEP 2020 stage guidelines and principles.]
+## Alignment Summary
+[Provide 2-3 sentences explaining exactly how the pedagogy and activities in this plan align with the matched stage guidelines, prerequisite dependencies, or framework principles.]
 `.trim();
 
 async function checkClarity(
@@ -136,7 +137,6 @@ Only output the raw text "CLEAR" or the raw JSON. Do not wrap in markdown code b
 
 export async function POST(req: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash";
 
   try {
     // ── Parse request body ────────────────────────────────────────────────
@@ -147,7 +147,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { grade, subject, objectives, clarified, clarification, messages } = body;
+    const { grade, subject, objectives, clarified, clarification, messages, mode, selectedModel } = body;
+    const model = selectedModel || process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
 
     if (!grade || !subject || !objectives) {
       return NextResponse.json(
@@ -178,9 +179,13 @@ export async function POST(req: Request) {
 
     const finalObjectives = clarification ? `${objectives} (Clarification: ${clarification})` : objectives;
 
-    // ── Determine NEP Stage ───────────────────────────────────────────────
-    const { stage, matched } = getNepGuidelines(grade);
-    const nepInstructions = `
+    // ── Context Grounding based on Experience Mode ──────────────────────────
+    let experienceContext = "";
+    if (mode === "marble_rag") {
+      experienceContext = getMarbleTaxonomyRAGContext(grade, subject, finalObjectives);
+    } else {
+      const { stage } = getNepGuidelines(grade);
+      experienceContext = `
 Pedagogical Stage Alignment:
 You must align the lesson plan and worksheet with India's National Education Policy (NEP) 2020.
 The student is in the "${stage.stageName}" (Grades: ${stage.grades}, Ages: ${stage.ages}).
@@ -188,8 +193,9 @@ Pedagogical Focus: ${stage.focus}
 Pedagogical Principles to apply:
 ${stage.pedagogicalPrinciples.map(p => `- ${p}`).join("\n")}
 `;
+    }
 
-    const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n${nepInstructions}`;
+    const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n${experienceContext}`;
     const userMessage = `Grade: ${grade}\nSubject: ${subject}\nObjectives: ${finalObjectives}`;
 
     // Construct conversation history for OpenRouter

@@ -37,6 +37,10 @@ export default function Home() {
   const [subject, setSubject] = useState("");
   const [objectives, setObjectives] = useState("");
 
+  // Experience Mode & Model state
+  const [mode, setMode] = useState<"standard" | "marble_rag">("standard");
+  const [selectedModel, setSelectedModel] = useState<string>("deepseek/deepseek-chat");
+
   const [history, setHistory] = useState<any[]>([]);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -143,7 +147,7 @@ export default function Home() {
     }
 
     try {
-      const payload: any = { grade, subject, objectives };
+      const payload: any = { grade, subject, objectives, mode, selectedModel };
       if (isClarifying) {
         payload.clarified = true;
         payload.clarification = clarificationResponse;
@@ -535,8 +539,73 @@ export default function Home() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem", alignItems: "start" }}>
               {/* ── Left panel: form ── */}
               <section className="glass-panel">
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "1.5rem" }}>Lesson Details</h2>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "1.25rem" }}>Lesson Details</h2>
                 <form onSubmit={handleSubmit}>
+                  {/* ── Experience Mode Toggle ── */}
+                  <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                    <label className="form-label">Experience Mode</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", background: "rgba(255, 255, 255, 0.05)", padding: "4px", borderRadius: "10px", border: "1px solid var(--border)" }}>
+                      <button
+                        type="button"
+                        onClick={() => setMode("standard")}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          background: mode === "standard" ? "var(--primary)" : "transparent",
+                          color: mode === "standard" ? "#fff" : "var(--foreground)",
+                          boxShadow: mode === "standard" ? "0 2px 8px rgba(99,102,241,0.3)" : "none",
+                        }}
+                      >
+                        🏛️ Standard (NEP 2020)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMode("marble_rag")}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          background: mode === "marble_rag" ? "linear-gradient(135deg, #a855f7, #ec4899)" : "transparent",
+                          color: mode === "marble_rag" ? "#fff" : "var(--foreground)",
+                          boxShadow: mode === "marble_rag" ? "0 2px 8px rgba(168,85,247,0.3)" : "none",
+                        }}
+                      >
+                        🧬 Marble RAG (Skill Graph)
+                      </button>
+                    </div>
+                    <div style={{ fontSize: "0.75rem", opacity: 0.6, marginTop: "6px" }}>
+                      {mode === "marble_rag" ? "Grounds generation using Marble OS-Taxonomy (1,590 micro-topics & prerequisite graph)." : "Applies National Education Policy (NEP) 2020 stage guidelines."}
+                    </div>
+                  </div>
+
+                  {/* ── Model Selector ── */}
+                  <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                    <label className="form-label" htmlFor="modelSelect">AI Model (Fast & Cheap)</label>
+                    <select
+                      id="modelSelect"
+                      className="input-field"
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      disabled={streaming}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <option value="deepseek/deepseek-chat">⚡ DeepSeek V3 / Flash (~$0.0003/plan)</option>
+                      <option value="deepseek/deepseek-r1-distill-llama-70b">🧠 DeepSeek R1 Distill (~$0.0008/plan)</option>
+                      <option value="openchat/openchat-7b">🌙 Luna / OpenChat 7B (~$0.00015/plan)</option>
+                      <option value="google/gemini-2.0-flash-lite-001">🚀 Gemini 2.0 Flash Lite (~$0.0003/plan)</option>
+                      <option value="google/gemini-2.5-flash">✨ Gemini 2.5 Flash (~$0.0003/plan)</option>
+                    </select>
+                  </div>
+
                   <div className="form-group">
                     <label className="form-label" htmlFor="grade">Grade Level</label>
                     <input
