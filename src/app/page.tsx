@@ -147,9 +147,21 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent, isClarifying: boolean = false, messagesToSend?: any[]) => {
     if (e) e.preventDefault();
+    setError(null);
+
+    // Validate required fields
+    if (!grade.trim() || !subject.trim() || !objectives.trim()) {
+      setError("Please fill in Grade Level, Subject, and Learning Objectives.");
+      setShowClarification(false);
+      return;
+    }
+
     setStreaming(true);
     setThinking(true);
-    setError(null);
+
+    if (isClarifying) {
+      setShowClarification(false);
+    }
 
     const isFollowUp = messagesToSend && messagesToSend.length > 0;
     if (!isFollowUp && !isClarifying) {
