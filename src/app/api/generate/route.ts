@@ -3,51 +3,19 @@ import { getNepGuidelines } from "@/lib/db/nep2020";
 import { getMarbleTaxonomyRAGContext } from "@/lib/rag/os-taxonomy";
 
 const SYSTEM_PROMPT = `
-You are an expert curriculum designer. Produce a concise, practical lesson plan and a differentiated activity worksheet.
+You are an expert curriculum designer. Produce a highly engaging, structured educational deliverable pack tailored to the teacher's selections.
 
-Rules:
-- Total response must be under 700 words.
-- Use Markdown with clear headings (##) and bullet points.
-- Be direct — no filler, no repetition.
-- Never restate the grade, subject, or objectives back to the user.
-- Generate a unique, engaging, and creative name for EVERY activity.
-- Specify a clear, measurable learning outcome for every single section and task.
-- Provide a clear list of physical props/materials needed and dynamic digital resource TODOs.
-- Explicitly align the pedagogy to the student's stage guidelines.
-- Tag every activity/task name with either '[Verbal Q&A]' or '[Worksheet Task]' at the end, e.g. 'Hook - [Creative Name] [Verbal Q&A]:' or 'Beginner - [Creative Name] [Worksheet Task]:'.
+Visual Formatting & Reading Comfort Rules:
+- Include visual breaks between sections: use callout quotes, bold bullet points, and clean subheadings.
+- Insert standard thematic visual image banner placeholders at key section transitions using markdown image syntax:
+  - Header Banner: ![Visual Topic Header](https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1000&q=80)
+  - Activity Banner: ![Hands-on Learning](https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80)
+  - Assessment Banner: ![Assessment & Quiz](https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1000&q=80)
+- Be direct, practical, and highly organized — avoid fluff.
+- Generate creative activity names and explicit learning outcome tags for every section.
+- Tag activities with '[Verbal Q&A]', '[Worksheet Task]', '[PPT Slide]', or '[Hands-On Activity]'.
 
-Output structure (use exactly these headings and markdown formatting):
-
-## Lesson Plan
-**Duration:** [estimate]
-
-## Materials & Resources
-- **Physical Props:** [List 2-3 physical props/materials the teacher needs to bring/prepare]
-- **Digital Resources:**
-  - [TODO] [Digital resource to refer to or create dynamically, e.g. '[TODO] Link to simulation on X' or '[TODO] Create dynamically: Y worksheet']
-
-## Lesson Steps
-- **Hook - [Creative Name]:** [One engaging opening sentence or question]
-  *(Learning Outcome: [Specific outcome])*
-- **Instruction - [Creative Name]:** [2–3 bullet points covering core concept]
-  *(Learning Outcome: [Specific outcome])*
-- **Guided Practice - [Creative Name]:** [1–2 bullet points (teacher-led activity)]
-  *(Learning Outcome: [Specific outcome])*
-- **Independent Practice - [Creative Name]:** [1 bullet point]
-  *(Learning Outcome: [Specific outcome])*
-- **Closure - [Creative Name]:** [One exit-ticket or reflection prompt]
-  *(Learning Outcome: [Specific outcome])*
-
-## Differentiated Worksheet
-- **Beginner - [Creative Name]:** [1–2 simple tasks]
-  *(Learning Outcome: [Specific outcome])*
-- **Intermediate - [Creative Name]:** [1–2 tasks requiring application]
-  *(Learning Outcome: [Specific outcome])*
-- **Advanced - [Creative Name]:** [1–2 tasks requiring analysis or creation]
-  *(Learning Outcome: [Specific outcome])*
-
-## Alignment Summary
-[Provide 2-3 sentences explaining exactly how the pedagogy and activities in this plan align with the matched stage guidelines, prerequisite dependencies, or framework principles.]
+Include requested section deliverables clearly (e.g. Lesson Plan, Differentiated Worksheet & Quiz, PPT Presentation Outline, Hands-On Activity Guide).
 `.trim();
 
 async function checkClarity(
@@ -137,6 +105,7 @@ Only output the raw text "CLEAR" or the raw JSON. Do not wrap in markdown code b
 
 export async function POST(req: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
+  const model = process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat";
 
   try {
     // ── Parse request body ────────────────────────────────────────────────
@@ -147,8 +116,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { grade, subject, objectives, clarified, clarification, messages, mode, selectedModel } = body;
-    const model = selectedModel || process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
+    const { grade, subject, objectives, clarified, clarification, messages, mode, deliverables } = body;
 
     if (!grade || !subject || !objectives) {
       return NextResponse.json(
@@ -178,6 +146,9 @@ export async function POST(req: Request) {
     }
 
     const finalObjectives = clarification ? `${objectives} (Clarification: ${clarification})` : objectives;
+    const requestedDeliverables = deliverables && Array.isArray(deliverables) && deliverables.length > 0
+      ? deliverables.join(", ")
+      : "Lesson Plan, Differentiated Worksheet & Quiz, PPT Presentation Outline";
 
     // ── Context Grounding based on Experience Mode ──────────────────────────
     let experienceContext = "";
@@ -195,8 +166,8 @@ ${stage.pedagogicalPrinciples.map(p => `- ${p}`).join("\n")}
 `;
     }
 
-    const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n${experienceContext}`;
-    const userMessage = `Grade: ${grade}\nSubject: ${subject}\nObjectives: ${finalObjectives}`;
+    const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\nRequested Deliverable Assets: ${requestedDeliverables}\n\n${experienceContext}`;
+    const userMessage = `Grade: ${grade}\nSubject: ${subject}\nObjectives: ${finalObjectives}\nRequested Deliverables: ${requestedDeliverables}`;
 
     // Construct conversation history for OpenRouter
     let finalMessages: any[] = [];

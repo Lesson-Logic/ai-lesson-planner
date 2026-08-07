@@ -37,15 +37,20 @@ export default function Home() {
   const [subject, setSubject] = useState("");
   const [objectives, setObjectives] = useState("");
 
-  // Experience Mode & Model state
+  // Experience Mode & Deliverables state
   const [mode, setMode] = useState<"standard" | "marble_rag">("standard");
-  const [selectedModel, setSelectedModel] = useState<string>("deepseek/deepseek-chat");
+  const [deliverables, setDeliverables] = useState<string[]>([
+    "Lesson Plan",
+    "Differentiated Worksheet & Quiz",
+    "PPT Presentation Outline"
+  ]);
+  const [expandedCanvas, setExpandedCanvas] = useState(false);
 
   const [history, setHistory] = useState<any[]>([]);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Clarification state
+  // Clarification / Focus Area modal state
   const [showClarification, setShowClarification] = useState(false);
   const [clarificationData, setClarificationData] = useState<{ questions: string[]; suggestions: string[] } | null>(null);
   const [clarificationResponse, setClarificationResponse] = useState("");
@@ -93,12 +98,19 @@ export default function Home() {
     }
   }, [chatMessages, result]);
 
+  const toggleDeliverable = (item: string) => {
+    setDeliverables(prev =>
+      prev.includes(item) ? prev.filter(d => d !== item) : [...prev, item]
+    );
+  };
+
   const handleSelectHistory = (item: any) => {
     setGrade(item.grade);
     setSubject(item.subject);
     setObjectives(item.objectives);
     setSelectedHistoryId(item.id);
     setError(null);
+    setShowClarification(false);
 
     if (item.messages && item.messages.length > 0) {
       setChatMessages(item.messages);
@@ -147,7 +159,7 @@ export default function Home() {
     }
 
     try {
-      const payload: any = { grade, subject, objectives, mode, selectedModel };
+      const payload: any = { grade, subject, objectives, mode, deliverables };
       if (isClarifying) {
         payload.clarified = true;
         payload.clarification = clarificationResponse;
@@ -538,7 +550,7 @@ export default function Home() {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem", alignItems: "start" }}>
               {/* ── Left panel: form ── */}
-              <section className="glass-panel">
+              <section className="glass-panel" style={{ display: expandedCanvas ? "none" : "block" }}>
                 <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "1.25rem" }}>Lesson Details</h2>
                 <form onSubmit={handleSubmit}>
                   {/* ── Experience Mode Toggle ── */}
@@ -587,23 +599,40 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* ── Model Selector ── */}
+                  {/* ── Deliverables Selection ── */}
                   <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                    <label className="form-label" htmlFor="modelSelect">AI Model (Fast & Cheap)</label>
-                    <select
-                      id="modelSelect"
-                      className="input-field"
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      disabled={streaming}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <option value="deepseek/deepseek-chat">⚡ DeepSeek V3 / Flash (~$0.0003/plan)</option>
-                      <option value="deepseek/deepseek-r1-distill-llama-70b">🧠 DeepSeek R1 Distill (~$0.0008/plan)</option>
-                      <option value="openchat/openchat-7b">🌙 Luna / OpenChat 7B (~$0.00015/plan)</option>
-                      <option value="google/gemini-2.0-flash-lite-001">🚀 Gemini 2.0 Flash Lite (~$0.0003/plan)</option>
-                      <option value="google/gemini-2.5-flash">✨ Gemini 2.5 Flash (~$0.0003/plan)</option>
-                    </select>
+                    <label className="form-label">Desired Deliverable Assets</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                      {[
+                        "Lesson Plan",
+                        "Differentiated Worksheet & Quiz",
+                        "PPT Presentation Outline",
+                        "Hands-On Activity Guide"
+                      ].map((item) => {
+                        const checked = deliverables.includes(item);
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => toggleDeliverable(item)}
+                            style={{
+                              padding: "6px 8px",
+                              borderRadius: "6px",
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                              textAlign: "left",
+                              cursor: "pointer",
+                              border: checked ? "1px solid var(--primary)" : "1px solid var(--border)",
+                              background: checked ? "rgba(99,102,241,0.12)" : "transparent",
+                              color: checked ? "var(--primary)" : "var(--foreground)",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            {checked ? "✓ " : "+ "}{item}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="form-group">
@@ -649,21 +678,56 @@ export default function Home() {
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                    disabled={streaming}
-                  >
-                    {streaming ? (
-                      <>
-                        <span style={{ width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
-                        Generating…
-                      </>
-                    ) : (
-                      "Generate Lesson Plan"
-                    )}
-                  </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                      disabled={streaming}
+                    >
+                      {streaming ? (
+                        <>
+                          <span style={{ width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                          Generating…
+                        </>
+                      ) : (
+                        "🚀 Generate Deliverables Pack"
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClarificationData({
+                          questions: [
+                            "What specific focus area or topic difficulty level should be emphasized?",
+                            "Do you have specific time constraints or classroom setup preferences?"
+                          ],
+                          suggestions: [
+                            "Focus on hands-on visual experiments",
+                            "Include beginner-friendly vocabulary checks",
+                            "Add exam-oriented assessment questions"
+                          ]
+                        });
+                        setShowClarification(true);
+                      }}
+                      style={{
+                        fontSize: "0.8rem",
+                        padding: "6px 12px",
+                        background: "rgba(168, 85, 247, 0.08)",
+                        border: "1px solid rgba(168, 85, 247, 0.25)",
+                        color: "#a855f7",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      🎯 Customize Focus Area & Assets
+                    </button>
+                  </div>
                   <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                 </form>
 
@@ -685,36 +749,67 @@ export default function Home() {
               </section>
 
               {/* ── Right panel: chat-style output ── */}
-              <section className="glass-panel" style={{ display: "flex", flexDirection: "column", minHeight: "500px" }}>
+              <section
+                className="glass-panel"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: "650px",
+                  gridColumn: expandedCanvas ? "1 / -1" : "auto",
+                  transition: "all 0.3s ease"
+                }}
+              >
                 {/* Panel header */}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1.25rem" }}>
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg, var(--primary), #a855f7)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "0.9rem",
-                      flexShrink: 0,
-                    }}
-                  >
-                    🎓
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>AI Lesson Planner</div>
-                    <div style={{ fontSize: "0.75rem", opacity: 0.5 }}>
-                      {streaming ? (
-                        <span style={{ color: "var(--primary)" }}>● responding…</span>
-                      ) : result ? (
-                        "● done"
-                      ) : (
-                        "○ ready"
-                      )}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, var(--primary), #a855f7)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.9rem",
+                        flexShrink: 0,
+                      }}
+                    >
+                      🎓
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>AI Lesson Planner</div>
+                      <div style={{ fontSize: "0.75rem", opacity: 0.5 }}>
+                        {streaming ? (
+                          <span style={{ color: "var(--primary)" }}>● responding…</span>
+                        ) : result ? (
+                          "● done"
+                        ) : (
+                          "○ ready"
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpandedCanvas(prev => !prev)}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.06)",
+                      border: "1px solid var(--border)",
+                      padding: "4px 10px",
+                      borderRadius: "6px",
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      color: "var(--foreground)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px"
+                    }}
+                  >
+                    {expandedCanvas ? "📖 Standard View" : "🖥️ Full Canvas View"}
+                  </button>
                 </div>
 
                 {/* Message area */}
@@ -723,11 +818,11 @@ export default function Home() {
                   style={{
                     flex: 1,
                     overflowY: "auto",
-                    borderRadius: "10px",
+                    borderRadius: "12px",
                     border: "1px solid var(--border)",
                     background: "var(--background)",
-                    padding: "1.25rem",
-                    maxHeight: "560px",
+                    padding: "1.5rem",
+                    maxHeight: "calc(100vh - 200px)",
                     scrollBehavior: "smooth",
                     display: "flex",
                     flexDirection: "column",
@@ -737,7 +832,7 @@ export default function Home() {
                     <div
                       style={{
                         height: "100%",
-                        minHeight: 200,
+                        minHeight: 280,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
@@ -798,9 +893,10 @@ export default function Home() {
                                 background: isUser ? "rgba(99, 102, 241, 0.08)" : "var(--surface)",
                                 border: "1px solid var(--border)",
                                 borderRadius: isUser ? "12px 0 12px 12px" : "0 12px 12px 12px",
-                                padding: "0.85rem 1.1rem",
-                                maxWidth: "85%",
-                                fontSize: "0.9rem",
+                                padding: "1.1rem 1.3rem",
+                                maxWidth: isUser ? "85%" : "100%",
+                                width: "100%",
+                                fontSize: "0.925rem",
                                 lineHeight: 1.7,
                                 overflowWrap: "break-word",
                                 color: "var(--foreground)",
@@ -813,6 +909,47 @@ export default function Home() {
                                   <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
+                                      h2: ({ node, children, ...props }) => (
+                                        <div style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "8px",
+                                          background: "rgba(99, 102, 241, 0.08)",
+                                          padding: "8px 14px",
+                                          borderRadius: "10px",
+                                          margin: "1.5em 0 0.8em",
+                                          borderLeft: "4px solid var(--primary)",
+                                          fontSize: "1.1rem",
+                                          fontWeight: 700,
+                                          color: "var(--primary)"
+                                        }} {...props}>
+                                          <span>📌</span> {children}
+                                        </div>
+                                      ),
+                                      h3: ({ node, children, ...props }) => (
+                                        <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#a855f7", margin: "1.2em 0 0.4em" }} {...props}>
+                                          {children}
+                                        </h3>
+                                      ),
+                                      img: ({ node, src, alt, ...props }) => (
+                                        <div style={{ margin: "1.25rem 0", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)", boxShadow: "0 6px 16px rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)" }}>
+                                          <img
+                                            src={src}
+                                            alt={alt || "Educational Visual Header"}
+                                            style={{ width: "100%", maxHeight: "260px", objectFit: "cover", display: "block" }}
+                                            onError={(e) => {
+                                              (e.target as HTMLElement).style.display = "none";
+                                            }}
+                                            {...props}
+                                          />
+                                          {alt && <div style={{ padding: "6px 12px", fontSize: "0.75rem", opacity: 0.7, textAlign: "center", background: "rgba(255,255,255,0.03)" }}>🖼️ {alt}</div>}
+                                        </div>
+                                      ),
+                                      blockquote: ({ node, children, ...props }) => (
+                                        <blockquote style={{ borderLeft: "4px solid #a855f7", background: "rgba(168, 85, 247, 0.06)", padding: "8px 14px", borderRadius: "0 8px 8px 0", margin: "1em 0", fontStyle: "normal" }} {...props}>
+                                          {children}
+                                        </blockquote>
+                                      ),
                                       li: ({ node, children, ...props }) => {
                                         const extractText = (n: any): string => {
                                           if (!n) return "";
@@ -823,7 +960,7 @@ export default function Home() {
                                         };
                                         const text = extractText(children);
 
-                                        // Replaces [TODO], [Verbal Q&A], and [Worksheet Task] tags with styled badges
+                                        // Replaces tags with visual pill badges
                                         const cleanChildren = React.Children.map(children, (child) => {
                                           if (typeof child === "string") {
                                             let modified = child;
@@ -857,11 +994,31 @@ export default function Home() {
                                                 </>
                                               );
                                             }
+                                            if (modified.includes("[PPT Slide]")) {
+                                              const parts = modified.split("[PPT Slide]");
+                                              return (
+                                                <>
+                                                  {parts[0]}
+                                                  <span style={{ display: "inline-block", background: "rgba(168, 85, 247, 0.12)", color: "#a855f7", fontSize: "0.725rem", fontWeight: 600, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>📊 PPT Slide</span>
+                                                  {parts[1]}
+                                                </>
+                                              );
+                                            }
+                                            if (modified.includes("[Hands-On Activity]")) {
+                                              const parts = modified.split("[Hands-On Activity]");
+                                              return (
+                                                <>
+                                                  {parts[0]}
+                                                  <span style={{ display: "inline-block", background: "rgba(236, 72, 153, 0.12)", color: "#ec4899", fontSize: "0.725rem", fontWeight: 600, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>🎨 Hands-On</span>
+                                                  {parts[1]}
+                                                </>
+                                              );
+                                            }
                                           }
                                           return child;
                                         });
 
-                                        const isStep = /^(Hook|Instruction|Guided Practice|Independent Practice|Closure|Beginner|Intermediate|Advanced)\s*[-–]/i.test(text);
+                                        const isStep = /^(Hook|Instruction|Guided Practice|Independent Practice|Closure|Beginner|Intermediate|Advanced|Slide|Task)\s*[-–]/i.test(text);
 
                                         let icon = null;
                                         let customStyle = {};
@@ -912,7 +1069,7 @@ export default function Home() {
                                         }
 
                                         return (
-                                          <li style={{ margin: "4px 0" }} {...props}>
+                                          <li style={{ margin: "6px 0" }} {...props}>
                                             {innerContent}
                                           </li>
                                         );
@@ -980,7 +1137,7 @@ export default function Home() {
                     <input
                       type="text"
                       className="input-field"
-                      placeholder="Ask AI to refine the plan (e.g. 'make it more hands-on', 'simplify wording')"
+                      placeholder="Ask AI to refine the plan (e.g. 'make it more hands-on', 'add quiz section')"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       disabled={streaming}
@@ -998,7 +1155,9 @@ export default function Home() {
                 )}
               </section>
             </div>
-            {showClarification && clarificationData && (
+
+            {/* ── Clarification & Deliverables Customization Modal ── */}
+            {showClarification && (
               <div
                 style={{
                   position: "fixed",
@@ -1019,7 +1178,7 @@ export default function Home() {
                 <div
                   className="glass-panel"
                   style={{
-                    maxWidth: "500px",
+                    maxWidth: "520px",
                     width: "100%",
                     background: "var(--background)",
                     boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.04)",
@@ -1028,14 +1187,51 @@ export default function Home() {
                   }}
                 >
                   <h3 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "6px", color: "var(--primary)" }}>
-                    ✨ Help Clarify Your Objectives
+                    🎯 Customize Focus Area & Deliverables
                   </h3>
                   <p style={{ fontSize: "0.875rem", opacity: 0.8, marginBottom: "1rem" }}>
-                    To design a truly custom lesson plan, the AI needs a bit more details.
+                    Select the exact educational asset pack you want to generate:
                   </p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
-                    {clarificationData.questions && clarificationData.questions.length > 0 && (
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.5px", opacity: 0.6, marginBottom: "0.5rem" }}>
+                        Deliverables Requested:
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                        {[
+                          "Lesson Plan",
+                          "Differentiated Worksheet & Quiz",
+                          "PPT Presentation Outline",
+                          "Hands-On Activity Guide"
+                        ].map((item) => {
+                          const checked = deliverables.includes(item);
+                          return (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => toggleDeliverable(item)}
+                              style={{
+                                padding: "6px 8px",
+                                borderRadius: "6px",
+                                fontSize: "0.75rem",
+                                fontWeight: 500,
+                                textAlign: "left",
+                                cursor: "pointer",
+                                border: checked ? "1px solid var(--primary)" : "1px solid var(--border)",
+                                background: checked ? "rgba(99,102,241,0.12)" : "transparent",
+                                color: checked ? "var(--primary)" : "var(--foreground)",
+                                transition: "all 0.2s"
+                              }}
+                            >
+                              {checked ? "✓ " : "+ "}{item}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {clarificationData?.questions && clarificationData.questions.length > 0 && (
                       <div>
                         <div style={{ fontWeight: 600, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.5px", opacity: 0.6, marginBottom: "0.25rem" }}>
                           Clarifying Questions:
@@ -1048,10 +1244,10 @@ export default function Home() {
                       </div>
                     )}
 
-                    {clarificationData.suggestions && clarificationData.suggestions.length > 0 && (
+                    {clarificationData?.suggestions && clarificationData.suggestions.length > 0 && (
                       <div>
                         <div style={{ fontWeight: 600, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.5px", opacity: 0.6, marginBottom: "0.25rem" }}>
-                          Suggestions:
+                          Suggested Focus Areas:
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
                           {clarificationData.suggestions.map((s, idx) => (
@@ -1084,16 +1280,15 @@ export default function Home() {
                     )}
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label" htmlFor="clarificationResponse">Your Answer:</label>
+                      <label className="form-label" htmlFor="clarificationResponse">Specific Preferences / Focus Wording:</label>
                       <textarea
                         id="clarificationResponse"
                         className="input-field"
-                        placeholder="e.g. Focus on single digit addition using visual tools like blocks."
+                        placeholder="e.g. Focus on single digit addition using visual tools like blocks, include quiz section."
                         rows={3}
                         value={clarificationResponse}
                         onChange={(e) => setClarificationResponse(e.target.value)}
                         style={{ resize: "none" }}
-                        required
                       />
                     </div>
                   </div>
@@ -1117,9 +1312,8 @@ export default function Home() {
                       type="button"
                       onClick={() => handleSubmit(undefined as any, true)}
                       className="btn-primary"
-                      disabled={!clarificationResponse.trim()}
                     >
-                      Confirm & Generate
+                      Confirm & Generate Pack
                     </button>
                   </div>
                 </div>
