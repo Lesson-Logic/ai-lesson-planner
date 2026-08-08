@@ -120,7 +120,8 @@ export async function POST(req: Request) {
 
               try {
                 const json = JSON.parse(trimmed.slice(6));
-                const text: string | undefined = json.choices?.[0]?.delta?.content;
+                const delta = json.choices?.[0]?.delta;
+                const text: string | undefined = delta?.content || delta?.text || delta?.reasoning_content;
                 if (text) controller.enqueue(new TextEncoder().encode(text));
               } catch {
                 // skip
@@ -135,7 +136,12 @@ export async function POST(req: Request) {
     });
 
     return new Response(stream, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform, no-store, must-revalidate",
+        "Connection": "keep-alive",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
   } catch (error: any) {
     return NextResponse.json(
