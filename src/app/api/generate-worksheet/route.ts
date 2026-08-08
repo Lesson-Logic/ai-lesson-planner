@@ -57,6 +57,7 @@ export async function POST(req: Request) {
     const requestBody = {
       model,
       stream: true,
+      max_tokens: 1500,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user",   content: userMessage },

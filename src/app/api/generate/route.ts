@@ -57,6 +57,7 @@ Only output the raw text "CLEAR" or the raw JSON. Do not wrap in markdown code b
       },
       body: JSON.stringify({
         model,
+        max_tokens: 300,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -187,6 +188,7 @@ ${stage.pedagogicalPrinciples.map(p => `- ${p}`).join("\n")}
     const requestBody = {
       model,
       stream: true,
+      max_tokens: 2500,
       messages: finalMessages,
     };
 
