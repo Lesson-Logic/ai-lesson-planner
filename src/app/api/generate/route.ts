@@ -269,10 +269,14 @@ ${stage.pedagogicalPrinciples.map(p => `- ${p}`).join("\n")}
             }
           }
 
-          controller.close();
+          try {
+            controller.close();
+          } catch (_) {}
         } catch (streamErr) {
           console.error("[API] Stream error:", streamErr);
-          controller.error(streamErr);
+          try {
+            controller.error(streamErr);
+          } catch (_) {}
         }
       },
     });

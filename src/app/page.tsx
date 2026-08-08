@@ -1044,7 +1044,7 @@ export default function Home() {
                                         </h3>
                                       ),
                                       img: ({ node, src, alt, ...props }) => (
-                                        <div style={{ margin: "1.25rem 0", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)", boxShadow: "0 6px 16px rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)" }}>
+                                        <span style={{ display: "block", margin: "1.25rem 0", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)", boxShadow: "0 6px 16px rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)" }}>
                                           <img
                                             src={src}
                                             alt={alt || "Educational Visual Header"}
@@ -1054,8 +1054,8 @@ export default function Home() {
                                             }}
                                             {...props}
                                           />
-                                          {alt && <div style={{ padding: "6px 12px", fontSize: "0.75rem", opacity: 0.7, textAlign: "center", background: "rgba(255,255,255,0.03)" }}>🖼️ {alt}</div>}
-                                        </div>
+                                          {alt && <span style={{ display: "block", padding: "6px 12px", fontSize: "0.75rem", opacity: 0.7, textAlign: "center", background: "rgba(255,255,255,0.03)" }}>🖼️ {alt}</span>}
+                                        </span>
                                       ),
                                       blockquote: ({ node, children, ...props }) => (
                                         <blockquote style={{ borderLeft: "4px solid #a855f7", background: "rgba(168, 85, 247, 0.06)", padding: "8px 14px", borderRadius: "0 8px 8px 0", margin: "1em 0", fontStyle: "normal" }} {...props}>
