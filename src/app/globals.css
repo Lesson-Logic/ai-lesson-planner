@@ -3,21 +3,79 @@
   --foreground: #0f172a;
   --primary: #6366f1;
   --primary-hover: #4f46e5;
-  --surface: rgba(255, 255, 255, 0.7);
-  --border: rgba(255, 255, 255, 0.5);
+  --brand-accent: #8b5cf6;
+  --surface: rgba(255, 255, 255, 0.75);
+  --surface-card: #ffffff;
+  --border: rgba(226, 232, 240, 0.8);
+  --border-focus: #6366f1;
+  --text-muted: #94a3b8;
   --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
   --radius: 16px;
+
+  /* Tag Tokens */
+  --tag-worksheet-bg: #e0e7ff;
+  --tag-worksheet-text: #3730a3;
+  --tag-quiz-bg: #fef3c7;
+  --tag-quiz-text: #92400e;
+  --tag-ppt-bg: #e0f2fe;
+  --tag-ppt-text: #075985;
+  --tag-hands-on-bg: #dcfce7;
+  --tag-hands-on-text: #166534;
+  --tag-qa-bg: #f3e8ff;
+  --tag-qa-text: #6b21a8;
+}
+
+[data-theme="dark"],
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
+  --brand-accent: #a78bfa;
+  --surface: rgba(30, 41, 59, 0.75);
+  --surface-card: #1e293b;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-focus: #818cf8;
+  --text-muted: #64748B;
+  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+
+  /* Tag Tokens Dark */
+  --tag-worksheet-bg: rgba(99, 102, 241, 0.2);
+  --tag-worksheet-text: #c7d2fe;
+  --tag-quiz-bg: rgba(245, 158, 11, 0.2);
+  --tag-quiz-text: #fde68a;
+  --tag-ppt-bg: rgba(14, 165, 233, 0.2);
+  --tag-ppt-text: #bae6fd;
+  --tag-hands-on-bg: rgba(34, 197, 94, 0.2);
+  --tag-hands-on-text: #bbf7d0;
+  --tag-qa-bg: rgba(168, 85, 247, 0.2);
+  --tag-qa-text: #e9d5ff;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #0f172a;
     --foreground: #f8fafc;
     --primary: #818cf8;
     --primary-hover: #6366f1;
-    --surface: rgba(30, 41, 59, 0.7);
-    --border: rgba(255, 255, 255, 0.1);
-    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    --brand-accent: #a78bfa;
+    --surface: rgba(30, 41, 59, 0.75);
+    --surface-card: #1e293b;
+    --border: rgba(255, 255, 255, 0.12);
+    --border-focus: #818cf8;
+    --text-muted: #64748B;
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+
+    --tag-worksheet-bg: rgba(99, 102, 241, 0.2);
+    --tag-worksheet-text: #c7d2fe;
+    --tag-quiz-bg: rgba(245, 158, 11, 0.2);
+    --tag-quiz-text: #fde68a;
+    --tag-ppt-bg: rgba(14, 165, 233, 0.2);
+    --tag-ppt-text: #bae6fd;
+    --tag-hands-on-bg: rgba(34, 197, 94, 0.2);
+    --tag-hands-on-text: #bbf7d0;
+    --tag-qa-bg: rgba(168, 85, 247, 0.2);
+    --tag-qa-text: #e9d5ff;
   }
 }
 
@@ -36,6 +94,67 @@ body {
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Figma Token Tag Pills */
+.tag-pill-worksheet {
+  display: inline-block;
+  background: var(--tag-worksheet-bg);
+  color: var(--tag-worksheet-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.tag-pill-quiz {
+  display: inline-block;
+  background: var(--tag-quiz-bg);
+  color: var(--tag-quiz-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.tag-pill-ppt {
+  display: inline-block;
+  background: var(--tag-ppt-bg);
+  color: var(--tag-ppt-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.tag-pill-hands-on {
+  display: inline-block;
+  background: var(--tag-hands-on-bg);
+  color: var(--tag-hands-on-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.tag-pill-qa {
+  display: inline-block;
+  background: var(--tag-qa-bg);
+  color: var(--tag-qa-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
 }
 
 /* Premium UI Utility Classes */

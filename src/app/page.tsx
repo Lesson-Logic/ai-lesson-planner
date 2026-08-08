@@ -37,6 +37,10 @@ export default function Home() {
   const [subject, setSubject] = useState("");
   const [objectives, setObjectives] = useState("");
 
+  // Dual-Theme & Toast state
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "auto">("auto");
+  const [copiedToast, setCopiedToast] = useState(false);
+
   // Experience Mode & Deliverables state
   const [mode, setMode] = useState<"standard" | "marble_rag">("standard");
   const [deliverables, setDeliverables] = useState<string[]>([
@@ -73,6 +77,42 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const outputRef = useRef<HTMLDivElement>(null);
+
+  // Handle Theme Mode toggle
+  useEffect(() => {
+    if (themeMode === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+      document.documentElement.classList.remove("dark");
+    } else if (themeMode === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      document.documentElement.classList.remove("dark");
+    }
+  }, [themeMode]);
+
+  const toggleTheme = () => {
+    setThemeMode(prev => (prev === "dark" ? "light" : "dark"));
+  };
+
+  const handleCopyContent = () => {
+    if (!result) return;
+    navigator.clipboard.writeText(result);
+    setCopiedToast(true);
+    setTimeout(() => setCopiedToast(false), 2000);
+  };
+
+  const handleDownloadMarkdown = () => {
+    if (!result) return;
+    const blob = new Blob([result], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${subject || "lesson"}-plan.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Load history on mount
   const fetchHistory = async () => {
@@ -518,27 +558,40 @@ export default function Home() {
           <main style={{ padding: "3rem 2rem", maxWidth: "1100px", margin: "0 auto", width: "100%" }}>
             {/* Top Navigation Row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-              <button
-                onClick={() => setSidebarOpen(prev => !prev)}
-                className="sidebar-toggle-btn"
-              >
-                {sidebarOpen ? "◀ Hide History" : "▶ Show History"}
-              </button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  onClick={() => setSidebarOpen(prev => !prev)}
+                  className="sidebar-toggle-btn"
+                >
+                  {sidebarOpen ? "◀ Hide History" : "▶ Show History"}
+                </button>
 
-              <button
-                onClick={() => {
-                  setGrade("");
-                  setSubject("");
-                  setObjectives("");
-                  setResult(null);
-                  setSelectedHistoryId(null);
-                  setError(null);
-                }}
-                className="sidebar-toggle-btn"
-                style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
-              >
-                ➕ New Plan
-              </button>
+                <button
+                  onClick={() => {
+                    setGrade("");
+                    setSubject("");
+                    setObjectives("");
+                    setResult(null);
+                    setSelectedHistoryId(null);
+                    setError(null);
+                  }}
+                  className="sidebar-toggle-btn"
+                  style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
+                >
+                  ➕ New Plan
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="sidebar-toggle-btn"
+                  title="Toggle Dual Theme (Light / Dark)"
+                >
+                  {themeMode === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode"}
+                </button>
+              </div>
             </div>
 
             {/* Header */}
@@ -803,25 +856,72 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setExpandedCanvas(prev => !prev)}
-                    style={{
-                      background: "rgba(255, 255, 255, 0.06)",
-                      border: "1px solid var(--border)",
-                      padding: "4px 10px",
-                      borderRadius: "6px",
-                      fontSize: "0.75rem",
-                      fontWeight: 500,
-                      color: "var(--foreground)",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px"
-                    }}
-                  >
-                    {expandedCanvas ? "📖 Standard View" : "🖥️ Full Canvas View"}
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    {result && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleCopyContent}
+                          style={{
+                            background: copiedToast ? "rgba(34, 197, 94, 0.15)" : "rgba(255, 255, 255, 0.06)",
+                            border: copiedToast ? "1px solid rgba(34, 197, 94, 0.4)" : "1px solid var(--border)",
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            color: copiedToast ? "#22c55e" : "var(--foreground)",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {copiedToast ? "✓ Copied!" : "📋 Copy"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDownloadMarkdown}
+                          style={{
+                            background: "rgba(255, 255, 255, 0.06)",
+                            border: "1px solid var(--border)",
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            color: "var(--foreground)",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                        >
+                          ⬇️ PDF / MD
+                        </button>
+                      </>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCanvas(prev => !prev)}
+                      style={{
+                        background: "rgba(255, 255, 255, 0.06)",
+                        border: "1px solid var(--border)",
+                        padding: "4px 10px",
+                        borderRadius: "6px",
+                        fontSize: "0.75rem",
+                        fontWeight: 500,
+                        color: "var(--foreground)",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
+                    >
+                      {expandedCanvas ? "📖 Standard View" : "⛶ Focus Mode"}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Message area */}
@@ -991,7 +1091,7 @@ export default function Home() {
                                               return (
                                                 <>
                                                   {parts[0]}
-                                                  <span style={{ display: "inline-block", background: "rgba(34, 197, 94, 0.12)", color: "#22c55e", fontSize: "0.725rem", fontWeight: 600, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>🗣️ Verbal Q&A</span>
+                                                  <span className="tag-pill-qa">🗣️ Verbal Q&A</span>
                                                   {parts[1]}
                                                 </>
                                               );
@@ -1001,7 +1101,7 @@ export default function Home() {
                                               return (
                                                 <>
                                                   {parts[0]}
-                                                  <span style={{ display: "inline-block", background: "rgba(59, 130, 246, 0.12)", color: "#3b82f6", fontSize: "0.725rem", fontWeight: 600, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>📄 Worksheet Task</span>
+                                                  <span className="tag-pill-worksheet">📄 Worksheet Task</span>
                                                   {parts[1]}
                                                 </>
                                               );
@@ -1011,7 +1111,7 @@ export default function Home() {
                                               return (
                                                 <>
                                                   {parts[0]}
-                                                  <span style={{ display: "inline-block", background: "rgba(168, 85, 247, 0.12)", color: "#a855f7", fontSize: "0.725rem", fontWeight: 600, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>📊 PPT Slide</span>
+                                                  <span className="tag-pill-ppt">📊 PPT Slide</span>
                                                   {parts[1]}
                                                 </>
                                               );
@@ -1021,7 +1121,7 @@ export default function Home() {
                                               return (
                                                 <>
                                                   {parts[0]}
-                                                  <span style={{ display: "inline-block", background: "rgba(236, 72, 153, 0.12)", color: "#ec4899", fontSize: "0.725rem", fontWeight: 600, padding: "2px 6px", borderRadius: "4px", marginRight: "6px", verticalAlign: "middle" }}>🎨 Hands-On</span>
+                                                  <span className="tag-pill-hands-on">🎨 Hands-On</span>
                                                   {parts[1]}
                                                 </>
                                               );
