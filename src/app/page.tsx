@@ -555,18 +555,79 @@ export default function Home() {
 
         {/* Main Work Area */}
         <div style={{ flex: 1, overflowY: "auto" }}>
-          <main style={{ padding: "3rem 2rem", maxWidth: "1100px", margin: "0 auto", width: "100%" }}>
+          <main style={{ padding: "2rem 2.5rem", maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
             {/* Top Navigation Row */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "2rem",
+              padding: "0.75rem 1.25rem",
+              background: "var(--surface)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              borderRadius: "14px",
+              border: "1px solid var(--border)",
+              boxShadow: "var(--shadow)"
+            }}>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "8px",
+                    background: "linear-gradient(135deg, var(--primary), var(--brand-accent))",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontWeight: 800,
+                    fontSize: "1rem"
+                  }}>✨</div>
+                  <h1 style={{ fontSize: "1.2rem", fontWeight: 800, background: "linear-gradient(135deg, var(--primary), var(--brand-accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                    AI Lesson Planner
+                  </h1>
+                </div>
+
                 <button
                   onClick={() => setSidebarOpen(prev => !prev)}
                   className="sidebar-toggle-btn"
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    background: "transparent",
+                    border: "1px solid var(--border)",
+                    color: "var(--foreground)",
+                    cursor: "pointer"
+                  }}
                 >
-                  {sidebarOpen ? "◀ Hide History" : "▶ Show History"}
+                  {sidebarOpen ? "◀ Hide History" : "▶ History"}
                 </button>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                {/* Segmented Mode Switcher */}
+                <div className="segmented-tab-container">
+                  <button
+                    type="button"
+                    onClick={() => setMode("standard")}
+                    className={`segmented-tab-btn ${mode === "standard" ? "active" : ""}`}
+                  >
+                    🏛️ NEP 2020
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("marble_rag")}
+                    className={`segmented-tab-btn ${mode === "marble_rag" ? "active" : ""}`}
+                  >
+                    🧬 Marble RAG
+                  </button>
+                </div>
 
                 <button
+                  type="button"
                   onClick={() => {
                     setGrade("");
                     setSubject("");
@@ -575,126 +636,77 @@ export default function Home() {
                     setSelectedHistoryId(null);
                     setError(null);
                   }}
-                  className="sidebar-toggle-btn"
-                  style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    background: "rgba(99, 102, 241, 0.1)",
+                    border: "1px solid rgba(99, 102, 241, 0.3)",
+                    color: "var(--primary)",
+                    cursor: "pointer"
+                  }}
                 >
                   ➕ New Plan
                 </button>
-              </div>
 
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="sidebar-toggle-btn"
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    background: "transparent",
+                    border: "1px solid var(--border)",
+                    color: "var(--foreground)",
+                    cursor: "pointer"
+                  }}
                   title="Toggle Dual Theme (Light / Dark)"
                 >
-                  {themeMode === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode"}
+                  {themeMode === "dark" ? "☀️ Light" : "🌙 Dark"}
                 </button>
               </div>
             </div>
 
-            {/* Header */}
-            <header style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-              <h1
-                style={{
-                  fontSize: "2.5rem",
-                  fontWeight: "bold",
-                  marginBottom: "0.75rem",
-                  background: "linear-gradient(to right, var(--primary), #a855f7)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                AI Lesson Planner
-              </h1>
-              <p style={{ color: "var(--foreground)", opacity: 0.7, fontSize: "1.05rem" }}>
-                Generate comprehensive lesson plans and differentiated worksheets in seconds.
-              </p>
-            </header>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem", alignItems: "start" }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: expandedCanvas ? "1fr" : "400px 1fr",
+              gap: "1.75rem",
+              alignItems: "start"
+            }}>
               {/* ── Left panel: form ── */}
               <section className="glass-panel" style={{ display: expandedCanvas ? "none" : "block" }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "1.25rem" }}>Lesson Details</h2>
-                <form onSubmit={handleSubmit}>
-                  {/* ── Experience Mode Toggle ── */}
-                  <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                    <label className="form-label">Experience Mode</label>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", background: "rgba(255, 255, 255, 0.05)", padding: "4px", borderRadius: "10px", border: "1px solid var(--border)" }}>
-                      <button
-                        type="button"
-                        onClick={() => setMode("standard")}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: "8px",
-                          fontSize: "0.82rem",
-                          fontWeight: 600,
-                          border: "none",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          background: mode === "standard" ? "var(--primary)" : "transparent",
-                          color: mode === "standard" ? "#fff" : "var(--foreground)",
-                          boxShadow: mode === "standard" ? "0 2px 8px rgba(99,102,241,0.3)" : "none",
-                        }}
-                      >
-                        🏛️ Standard (NEP 2020)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMode("marble_rag")}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: "8px",
-                          fontSize: "0.82rem",
-                          fontWeight: 600,
-                          border: "none",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          background: mode === "marble_rag" ? "linear-gradient(135deg, #a855f7, #ec4899)" : "transparent",
-                          color: mode === "marble_rag" ? "#fff" : "var(--foreground)",
-                          boxShadow: mode === "marble_rag" ? "0 2px 8px rgba(168,85,247,0.3)" : "none",
-                        }}
-                      >
-                        🧬 Marble RAG (Skill Graph)
-                      </button>
-                    </div>
-                    <div style={{ fontSize: "0.75rem", opacity: 0.6, marginTop: "6px" }}>
-                      {mode === "marble_rag" ? "Grounds generation using Marble OS-Taxonomy (1,590 micro-topics & prerequisite graph)." : "Applies National Education Policy (NEP) 2020 stage guidelines."}
-                    </div>
-                  </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                  <h2 style={{ fontSize: "1.15rem", fontWeight: 700 }}>Lesson Configurator</h2>
+                  <span style={{ fontSize: "0.725rem", padding: "3px 8px", borderRadius: "12px", background: mode === "marble_rag" ? "rgba(168,85,247,0.15)" : "rgba(99,102,241,0.15)", color: mode === "marble_rag" ? "#a855f7" : "var(--primary)", fontWeight: 600 }}>
+                    {mode === "marble_rag" ? "Marble OS-Taxonomy RAG" : "NEP 2020 Stage Aligned"}
+                  </span>
+                </div>
 
+                <form onSubmit={handleSubmit}>
                   {/* ── Deliverables Selection ── */}
                   <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                    <label className="form-label">Desired Deliverable Assets</label>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                    <label className="form-label">Deliverable Assets</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                       {[
-                        "Lesson Plan",
-                        "Differentiated Worksheet & Quiz",
-                        "PPT Presentation Outline",
-                        "Hands-On Activity Guide"
+                        { title: "Lesson Plan", icon: "📋" },
+                        { title: "Differentiated Worksheet & Quiz", icon: "📝" },
+                        { title: "PPT Presentation Outline", icon: "📊" },
+                        { title: "Hands-On Activity Guide", icon: "🎨" }
                       ].map((item) => {
-                        const checked = deliverables.includes(item);
+                        const checked = deliverables.includes(item.title);
                         return (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => toggleDeliverable(item)}
-                            style={{
-                              padding: "6px 8px",
-                              borderRadius: "6px",
-                              fontSize: "0.75rem",
-                              fontWeight: 500,
-                              textAlign: "left",
-                              cursor: "pointer",
-                              border: checked ? "1px solid var(--primary)" : "1px solid var(--border)",
-                              background: checked ? "rgba(99,102,241,0.12)" : "transparent",
-                              color: checked ? "var(--primary)" : "var(--foreground)",
-                              transition: "all 0.2s"
-                            }}
+                          <div
+                            key={item.title}
+                            onClick={() => toggleDeliverable(item.title)}
+                            className={`deliverable-card ${checked ? "active" : ""}`}
                           >
-                            {checked ? "✓ " : "+ "}{item}
-                          </button>
+                            <span style={{ fontSize: "1rem" }}>{item.icon}</span>
+                            <span style={{ fontSize: "0.75rem", fontWeight: 600, flex: 1, lineHeight: 1.2 }}>{item.title}</span>
+                            <span style={{ fontSize: "0.85rem", opacity: checked ? 1 : 0.4 }}>{checked ? "✓" : "+"}</span>
+                          </div>
                         );
                       })}
                     </div>
@@ -743,20 +755,20 @@ export default function Home() {
                     />
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                     <button
                       type="submit"
                       className="btn-primary"
-                      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                      style={{ width: "100%" }}
                       disabled={streaming}
                     >
                       {streaming ? (
                         <>
                           <span style={{ width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
-                          Generating…
+                          Generating Deliverables…
                         </>
                       ) : (
-                        "🚀 Generate Deliverables Pack"
+                        "🚀 Generate Lesson Pack"
                       )}
                     </button>
 
@@ -1236,34 +1248,60 @@ export default function Home() {
 
                 {/* Chat Refinement Input Bar */}
                 {chatMessages && chatMessages.length > 0 && (
-                  <form
-                    onSubmit={handleSendFollowUp}
-                    style={{
-                      display: "flex",
-                      gap: "10px",
-                      marginTop: "1rem",
-                      padding: "0.75rem 0 0 0",
-                      borderTop: "1px solid var(--border)",
-                    }}
-                  >
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="Ask AI to refine the plan (e.g. 'make it more hands-on', 'add quiz section')"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      disabled={streaming}
-                      style={{ flex: 1 }}
-                    />
-                    <button
-                      type="submit"
-                      className="btn-primary"
-                      disabled={streaming || !chatInput.trim()}
-                      style={{ padding: "0 1.25rem", whiteSpace: "nowrap" }}
+                  <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+                      {[
+                        "Add 5-min warmup activity",
+                        "Make worksheet more challenging",
+                        "Format as 45-min schedule",
+                        "Include Quiz Section"
+                      ].map((suggestion, sIdx) => (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onClick={() => {
+                            setChatInput(suggestion);
+                          }}
+                          style={{
+                            background: "rgba(99, 102, 241, 0.08)",
+                            border: "1px solid rgba(99, 102, 241, 0.2)",
+                            color: "var(--primary)",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            padding: "3px 10px",
+                            borderRadius: "16px",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          ✨ {suggestion}
+                        </button>
+                      ))}
+                    </div>
+
+                    <form
+                      onSubmit={handleSendFollowUp}
+                      style={{ display: "flex", gap: "10px" }}
                     >
-                      Send
-                    </button>
-                  </form>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="Ask AI to refine the plan (e.g. 'make it more hands-on', 'add quiz section')"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        disabled={streaming}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={streaming || !chatInput.trim()}
+                        style={{ padding: "0 1.25rem", whiteSpace: "nowrap" }}
+                      >
+                        Send
+                      </button>
+                    </form>
+                  </div>
                 )}
               </section>
             </div>
